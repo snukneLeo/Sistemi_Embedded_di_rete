@@ -1,0 +1,129 @@
+#########################################################
+# CMake script for regression.
+########################################################
+# @author Francesco Stefanni
+
+#
+# Requires:
+# - ${TEST_PROGRAM}
+# - t
+# - GOLDEN_DIR
+#
+
+message( "GOLDEN_DIR: ${GOLDEN_DIR}" )
+message( "TEST_PROGRAM: ${TEST_PROGRAM}" )
+
+
+# "updating" or "testing" or "cleaning"
+SET( REGRESSION_PHASE "testing" )
+#SET( REGRESSION_PHASE "updating" )
+#SET( REGRESSION_PHASE "cleaning" )
+
+# Base prefix for dirs:
+if ("" MATCHES "${ti}" )
+  SET(RESULTS_PREFIX results/${t})
+  SET(REGRESSION_PREFIX regression/${t})
+  SET(GOLDEN_PREFIX ${GOLDEN_DIR}/${t})
+
+  execute_process(
+    COMMAND cmake -E make_directory results/${t}
+    COMMAND cmake -E make_directory regression/${t}
+    )
+
+else()
+  SET(RESULTS_PREFIX results/${t}/${ti})
+  SET(REGRESSION_PREFIX regression/${t}/${ti})
+  SET(GOLDEN_PREFIX ${GOLDEN_DIR}/${t}/${ti})
+  execute_process(
+    COMMAND cmake -E make_directory results/${t}
+    COMMAND cmake -E make_directory results/${t}/${ti}
+    COMMAND cmake -E make_directory regression/${t}
+    COMMAND cmake -E make_directory regression/${t}/${ti}
+    )
+
+endif()
+
+
+
+
+# Specific vars:
+
+SET(TEST_OUTPUT_LOG ${RESULTS_PREFIX}/output.txt)
+SET(TEST_ERROR_LOG ${RESULTS_PREFIX}/error.txt)
+
+SET(TEST_OUTPUT_GOLDEN ${GOLDEN_PREFIX}/golden_output.txt)
+SET(TEST_ERROR_GOLDEN  ${GOLDEN_PREFIX}/golden_error.txt)
+
+SET(REGRESSION_FILE_ERROR ${REGRESSION_PREFIX}/error.txt)
+
+
+# Run the test.
+execute_process(
+  COMMAND ${TEST_PROGRAM} ${ti}
+  RESULT_VARIABLE RV
+  OUTPUT_FILE ${TEST_OUTPUT_LOG}
+  ERROR_FILE ${TEST_ERROR_LOG}
+  )
+if( ${RV} )
+  message( FATAL_ERROR "Error in running test." )
+endif()
+
+
+if( ${REGRESSION_PHASE} MATCHES "updating" )
+
+  # Creating golden models.
+  message("Updating.")
+
+  if ("" MATCHES "${ti}" )
+    execute_process(
+      COMMAND cmake -E make_directory ${GOLDEN_PREFIX}
+      )
+  else()
+    execute_process(
+      COMMAND cmake -E make_directory ${GOLDEN_DIR}
+      COMMAND cmake -E make_directory ${GOLDEN_PREFIX}
+      )
+  endif()
+
+  execute_process(
+    COMMAND cmake -E copy ${TEST_OUTPUT_LOG} ${TEST_OUTPUT_GOLDEN}
+    COMMAND cmake -E copy ${TEST_ERROR_LOG} ${TEST_ERROR_GOLDEN}
+    )
+
+elseif( ${REGRESSION_PHASE} MATCHES "cleaning" )
+
+  # Deleting golden models.
+  message("Cleaning.")
+
+  execute_process(
+    COMMAND cmake -E remove ${TEST_OUTPUT_GOLDEN}
+    COMMAND cmake -E remove ${TEST_ERROR_GOLDEN}
+    )
+
+else()
+
+  # Diff golden and log.
+  message("Testing.")
+
+  execute_process(
+    COMMAND cmake -E compare_files ${TEST_OUTPUT_LOG} ${TEST_OUTPUT_GOLDEN}
+    RESULT_VARIABLE REG_RES
+    ERROR_FILE ${REGRESSION_FILE_ERROR}
+    )
+  if( ${REG_RES} )
+    message( FATAL_ERROR "Error in output regression." )
+  endif()
+
+  execute_process(
+    COMMAND cmake -E compare_files ${TEST_ERROR_LOG} ${TEST_ERROR_GOLDEN}
+    RESULT_VARIABLE REG_RES
+    ERROR_FILE ${REGRESSION_FILE_ERROR}
+    )
+  if( ${REG_RES} )
+    message( FATAL_ERROR "Error in error regression." )
+  endif()
+
+endif()
+
+
+# <EOF>

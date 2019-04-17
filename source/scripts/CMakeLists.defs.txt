@@ -1,0 +1,229 @@
+#####################################################
+# General CMake compiler definitions.
+#####################################################
+#
+# @author Francesco Stefanni
+#
+# Variables that must be set by submodules:
+# * C & C++:
+#   - BASIC_C_CXX_FLAGS
+#   - C_CXX_MEM_FLAGS
+#   - C_CXX_OPT_FLAGS
+#   - C_CXX_DEB_FLAGS
+# * C:
+#   - BASIC_C_FLAGS
+#   - C_MEM_FLAGS
+#   - C_OPT_FLAGS
+#   - C_DEB_FLAGS
+# * C++:
+#   - BASIC_CXX_FLAGS
+#   - CXX_MEM_FLAGS
+#   - CXX_OPT_FLAGS
+#   - CXX_DEB_FLAGS
+#
+###############################################
+# Options required by submodules for the user:
+###############################################
+
+# Using the c ansi standard?
+option(USE_C_ANSI_STANDARD "Sets the using of the C ANSI standard." OFF)
+# Using the c++ ansi standard?
+option(USE_CXX_ANSI_STANDARD "Sets the using of the C++ ANSI standard." OFF)
+# Using the c++0x standard?
+option(USE_CXX_0X_STANDARD "Sets the using of the C++0x standard." OFF)
+
+# Warnings are errors?
+option(COMPILER_WARNINGS_AS_ERRORS "Sets to treat warnings as errors." OFF)
+# Fatal errors?
+option(COMPILER_FATAL_ERRORS "Sets to treat errors as fatals." OFF)
+# Use visibility?
+option(COMPILER_VISIBILITY "Sets to use simbol visibility behavior as hidden." OFF)
+
+#####################################################
+# Init of required vars for submodules.
+#####################################################
+
+# C & C++:
+SET(BASIC_C_CXX_FLAGS "" CACHE INTERNAL "")
+SET(C_CXX_MEM_FLAGS "" CACHE INTERNAL "")
+SET(C_CXX_OPT_FLAGS "" CACHE INTERNAL "")
+SET(C_CXX_DEB_FLAGS "" CACHE INTERNAL "")
+
+# C:
+SET(BASIC_C_FLAGS "" CACHE INTERNAL "")
+SET(C_MEM_FLAGS "" CACHE INTERNAL "")
+SET(C_OPT_FLAGS "" CACHE INTERNAL "")
+SET(C_DEB_FLAGS "" CACHE INTERNAL "")
+
+# C++:
+SET(BASIC_CXX_FLAGS "" CACHE INTERNAL "")
+SET(CXX_MEM_FLAGS "" CACHE INTERNAL "")
+SET(CXX_OPT_FLAGS "" CACHE INTERNAL "")
+SET(CXX_DEB_FLAGS "" CACHE INTERNAL "")
+
+
+#####################################################
+# Provided variables management.
+#####################################################
+
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+get_property(CURRENT_LANGUAGES GLOBAL PROPERTY ENABLED_LANGUAGES)
+
+list(FIND CURRENT_LANGUAGES "C" MY_C_IS_ENABLED)
+if(${MY_C_IS_ENABLED} EQUAL -1)
+  SET(C_IS_ENABLED OFF)
+else(${MY_C_IS_ENABLED} EQUAL -1)
+  SET(C_IS_ENABLED ON)
+endif(${MY_C_IS_ENABLED} EQUAL -1)
+
+
+list(FIND CURRENT_LANGUAGES "CXX" MY_CXX_IS_ENABLED)
+if(${MY_CXX_IS_ENABLED} EQUAL -1)
+  SET(CXX_IS_ENABLED OFF)
+else(${MY_CXX_IS_ENABLED} EQUAL -1)
+  SET(CXX_IS_ENABLED ON)
+endif(${MY_CXX_IS_ENABLED} EQUAL -1)
+
+
+#####################################################
+# Support functions
+#####################################################
+
+function(check_flag FLAG LANG REQUIRED_REF)
+  if(${REQUIRED_REF})
+
+    if(LANG STREQUAL "CXX")
+      if(CXX_IS_ENABLED)
+	CHECK_CXX_COMPILER_FLAG(${FLAG} ${REQUIRED_REF}${FLAG})
+	SET(${REQUIRED_REF} ${REQUIRED_REF}${FLAG} PARENT_SCOPE)
+      endif(CXX_IS_ENABLED)
+    endif(LANG STREQUAL "CXX")
+
+    if(LANG STREQUAL "C")
+      if(C_IS_ENABLED)
+	CHECK_C_COMPILER_FLAG(${FLAG} ${REQUIRED_REF}${FLAG})
+	SET(${REQUIRED_REF} ${REQUIRED_REF}${FLAG} PARENT_SCOPE)
+      endif(C_IS_ENABLED)
+    endif(LANG STREQUAL "C")
+
+    if(LANG STREQUAL "C_CXX")
+
+      if(CXX_IS_ENABLED)
+	CHECK_CXX_COMPILER_FLAG(${FLAG} REQUIRED_CXX${FLAG})
+      else(CXX_IS_ENABLED)
+	SET(REQUIRED_CXX${FLAG} ON CACHE INTERNAL "")
+      endif(CXX_IS_ENABLED)
+
+      if(C_IS_ENABLED)
+	CHECK_C_COMPILER_FLAG(${FLAG} REQUIRED_C${FLAG})
+      else(C_IS_ENABLED)
+	SET(REQUIRED_C${FLAG} ON CACHE INTERNAL "")
+      endif(C_IS_ENABLED)
+
+      if(REQUIRED_C${FLAG} AND REQUIRED_CXX${FLAG})
+	SET(${REQUIRED_REF} ON PARENT_SCOPE)
+      else(REQUIRED_C${FLAG} AND REQUIRED_CXX${FLAG})
+	SET(${REQUIRED_REF} OFF PARENT_SCOPE)
+      endif(REQUIRED_C${FLAG} AND REQUIRED_CXX${FLAG})
+    endif(LANG STREQUAL "C_CXX")
+
+    # if(NOT ${REQUIRED_REF})
+    #   message(WARNING "Compiler option \"${FLAG}\" unsupported for language ${LANG}")
+    # endif(NOT ${REQUIRED_REF})
+
+  endif(${REQUIRED_REF})
+endfunction(check_flag)
+
+#
+# Adds a flag.
+#
+# @param TO List into which add the flag.
+# @param FLAG The string flag.
+# @param REQUIRED Wheter to add the flag.
+# @param CHECK_LANG OFF "CXX" "C" "C_CXX"
+#
+function(add_flag TO FLAG REQUIRED CHECK_LANG)
+
+  SET(FLAG_CHECK_RESULT ON)
+
+  if(CHECK_LANG AND REQUIRED)
+    check_flag(${FLAG} ${CHECK_LANG} REQUIRED)
+  endif(CHECK_LANG AND REQUIRED)
+
+  if(REQUIRED)
+    SET(${TO} "${${TO}} ${FLAG}" PARENT_SCOPE)
+  endif(REQUIRED)
+
+endfunction(add_flag)
+
+#####################################################
+# Including submodules.
+#####################################################
+
+
+# include(${PROJECT_SOURCE_DIR}/scripts/CMakeLists.gcc.txt)
+# include(${PROJECT_SOURCE_DIR}/scripts/CMakeLists.vc.txt)
+# include(${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.gcc.txt)
+# include(${PROJECT_SOURCE_DIR}/CMakeLists.vc.txt)
+include(CMakeLists.gcc)
+include(CMakeLists.vc)
+
+
+#####################################################
+# Flags config.
+#####################################################
+
+#
+# We do not retain usual CMake compiling flags.
+#
+
+# None:
+
+SET(CMAKE_C_FLAGS "${BASIC_C_CXX_FLAGS} ${BASIC_C_FLAGS}" CACHE STRING "C None flags." FORCE)
+SET(CMAKE_CXX_FLAGS "${BASIC_C_CXX_FLAGS} ${BASIC_CXX_FLAGS}" CACHE STRING "C++ None flags." FORCE)
+
+
+# Debug:
+
+SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} ${C_CXX_DEB_FLAGS}  ${C_DEB_FLAGS}"
+  CACHE STRING "C Debug flags." FORCE)
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} ${C_CXX_DEB_FLAGS} ${CXX_DEB_FLAGS}"
+  CACHE STRING "C++ Debug flags." FORCE)
+
+
+# Release:
+
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -DNDEBUG ${C_CXX_OPT_FLAGS} ${C_OPT_FLAGS}"
+  CACHE STRING "C Release flags." FORCE)
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -DNDEBUG ${C_CXX_OPT_FLAGS} ${CXX_OPT_FLAGS}"
+  CACHE STRING "C++ Release flags." FORCE)
+
+
+# RelWithDebInfo:
+
+SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_DEBUG} ${C_CXX_OPT_FLAGS} ${C_OPT_FLAGS}"
+  CACHE STRING "C RelWithDebInfo flags." FORCE)
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_DEBUG} ${C_CXX_OPT_FLAGS} ${CXX_OPT_FLAGS}"
+  CACHE STRING "C++ RelWithDebInfo flags." FORCE)
+
+
+# MinSizeRel:
+
+SET(CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS} -DNDEBUG ${C_CXX_MEM_FLAGS} ${C_MEM_FLAGS}"
+  CACHE STRING "C MinSizeRel flags." FORCE)
+SET(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS} -DNDEBUG ${C_CXX_MEM_FLAGS} ${CXX_MEM_FLAGS}"
+  CACHE STRING "C++ MinSizeRel flags." FORCE)
+
+#####################################################
+# Marking.
+#####################################################
+
+mark_as_advanced(CMAKE_C_FLAGS CMAKE_CXX_FLAGS
+  CMAKE_C_FLAGS_DEBUG CMAKE_CXX_FLAGS_DEBUG
+  CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_RELEASE
+  CMAKE_C_FLAGS_RELWITHDEBINFO CMAKE_CXX_FLAGS_RELWITHDEBINFO
+  CMAKE_C_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_MINSIZEREL)
+
+#### EOF ####

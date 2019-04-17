@@ -1,0 +1,38 @@
+#############################################
+# General support functions.
+#############################################
+#
+# @author Francesco Stefanni
+#
+
+# The same of add_library, but builds both shared and static.
+# Creates two targets: <name> & <name>_static.
+#
+# add_shared_and_static_library(<name> source1 source2 ... sourceN)
+#
+function(add_shared_and_static_library name )
+  # Removing name param:
+  list(REMOVE_AT ARGV 0)
+  # Adding shared lib:
+  add_library(${name} SHARED ${ARGV})
+  # Adding static lib:
+  add_library(${name}_static STATIC ${ARGV})
+  SET_TARGET_PROPERTIES(${name}_static PROPERTIES OUTPUT_NAME "${name}")
+  SET_TARGET_PROPERTIES(${name}_static PROPERTIES PREFIX "lib")
+endfunction(add_shared_and_static_library )
+
+
+# Gets the absolute path w.r.t. given file.
+# Workaround for missing CMAKE_CURRENT_LIST_DIR for cmake version less than 2.8.3.
+#
+# @param FILE The current cmake file.
+#
+function(set_list_dir FILE)
+  if(CMAKE_VERSION VERSION_LESS "2.8.3")
+    get_filename_component(TMP_RESULT_PATH ${FILE} PATH)
+    if(NOT TMP_RESULT_PATH)
+      message(FATAL_ERROR "Unable to set current cmake file path.")
+    endif(NOT TMP_RESULT_PATH)
+    SET(CMAKE_CURRENT_LIST_DIR ${TMP_RESULT_PATH} PARENT_SCOPE)
+  endif(CMAKE_VERSION VERSION_LESS "2.8.3")
+endfunction(set_list_dir)

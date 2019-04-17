@@ -1,0 +1,101 @@
+#############################################
+# CMake file for dependencies and targets.
+#############################################
+#
+# @author Francesco Stefanni
+#
+
+#############################################
+# Configuring.
+#############################################
+
+# For each trace, which maximum verbosity level shall be used.
+# From 0 (no trace) to 5 (max verbosity).
+
+SET(SCNSL_INFO 5 CACHE STRING "Verbosity level for infos. (0 to 5)" FORCE)
+SET(SCNSL_LOG 5 CACHE STRING "Verbosity level for logs. (0 to 5)" FORCE)
+SET(SCNSL_DBG 5 CACHE STRING "Verbosity level for debugs. (0 to 5)" FORCE)
+
+SET(SCNSL_WARNING 5 CACHE STRING "Verbosity level for warnings. (0 to 5)" FORCE)
+SET(SCNSL_ERROR 5 CACHE STRING "Verbosity level for errors. (0 to 5)" FORCE)
+SET(SCNSL_FATAL 5 CACHE STRING "Verbosity level for fatals. (0 to 5)" FORCE)
+
+mark_as_advanced(FORCE SCNSL_INFO SCNSL_LOG SCNSL_DBG SCNSL_WARNING SCNSL_ERROR SCNSL_FATAL)
+
+# Configuring.
+
+add_definitions(
+  -DSCNSL_INFO=${SCNSL_INFO}
+  -DSCNSL_LOG=${SCNSL_LOG}
+  -DSCNSL_DBG=${SCNSL_DBG}
+  -DSCNSL_WARNING=${SCNSL_WARNING}
+  -DSCNSL_ERROR=${SCNSL_ERROR}
+  -DSCNSL_FATAL=${SCNSL_FATAL}
+  )
+
+
+#############################################
+# Includes.
+#############################################
+
+include_directories(SYSTEM ${SCNSL_INCLUDE} ${SYSTEMC_INCLUDE} ${SYSTEMC_TLM_INCLUDE})
+
+#############################################
+# Sources.
+#############################################
+
+set(TWO_NODES
+	1.Two_Nodes/src/main.cc
+	1.Two_Nodes/src/MyTaskSensor.cc
+    1.Two_Nodes/src/MyTaskCollector.cc        
+  )
+
+set(THREE_NODES_WITH_ROUTER
+	2.Three_Nodes_with_Router/src/main.cc
+    2.Three_Nodes_with_Router/src/MyTaskCollector.cc        
+	2.Three_Nodes_with_Router/src/MyTaskSensor.cc
+  )
+
+set(TEMPERATURE_MONITORING
+	3.Temperature_Monitoring/src/main.cc
+	3.Temperature_Monitoring/src/MyTaskSensor.cc
+    3.Temperature_Monitoring/src/MyTaskController.cc        
+  )
+
+#############################################
+# Targets.
+#############################################
+
+#### Two_Nodes.
+add_executable(Two_Nodes ${TWO_NODES})
+target_link_libraries(Two_Nodes ${LIB_SCNSL} ${LIB_SYSTEMC} ${LIB_DL})
+
+#### Three_Nodes_with_Router.
+add_executable(Three_Nodes_with_Router ${THREE_NODES_WITH_ROUTER})
+target_link_libraries(Three_Nodes_with_Router ${LIB_SCNSL} ${LIB_SYSTEMC} ${LIB_DL})
+
+#### Temperature_Monitoring.
+add_executable(Temperature_Monitoring ${TEMPERATURE_MONITORING})
+target_link_libraries(Temperature_Monitoring ${LIB_SCNSL} ${LIB_SYSTEMC} ${LIB_DL})
+
+#############################################
+# Targets Lists.
+#############################################
+
+
+# Setting executable targets:
+
+SET(EXE_TARGETS
+   
+  Two_Nodes
+  Three_Nodes_with_Router
+  Temperature_Monitoring
+  )
+
+SET(TEST_TARGETS
+  ${EXE_TARGETS}
+  )
+
+add_install_exe_targets(${EXE_TARGETS})
+
+#### EOF ####
