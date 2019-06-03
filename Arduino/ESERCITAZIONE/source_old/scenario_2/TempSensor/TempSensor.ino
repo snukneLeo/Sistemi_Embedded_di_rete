@@ -81,7 +81,7 @@ void setup() {
 	//  RF24_250KBPS per 250kbs
 	//  RF24_1MBPS per 1Mbps
 	//  RF24_2MBPS per 2Mbps
-	radio.setDataRate( RF24_250KBPS );
+	radio.setDataRate( RF24_2MBPS );
 
 	//apro la pipe per la scrittura
 	radio.openWritingPipe(addresses[0]);
@@ -103,8 +103,7 @@ void loop() {
 	sensors.requestTemperatures();
 
 	// Restituisce la temperatura in gradi Celsius (var: temperature).
-	Serial.println(sensors.getTempCByIndex(0));
-  temperature = sensors.getTempCByIndex(0);
+	temperature = sensors.getTempCByIndex(0);
 
 	// Controllo se la temperature e' sotto il limite.
 	if (temperature < 28) {
@@ -113,16 +112,12 @@ void loop() {
 		sendReq.tempo = micros();
 		sendReq.temperatura = temperature;
 
-		// Invio della struttura dati 'sendReq', ma con controllo di
-		//  avvenuto invio.
-		if (radio.write(&sendReq,sizeof(sendReq))) {
-			Serial.print("Sending temperature : ");
-			Serial.print(sendReq.temperatura);
-			Serial.println(" C");
-		}
-		else {
-			Serial.println("Failed on sending the temperature.");
-		}
+		// Invio della struttura dati 'sendReq'
+    radio.write( &sendReq, sizeof(sendReq));
+		Serial.print("Sending temperature : ");
+    Serial.print(sendReq.temperatura);
+    Serial.println(" C");
+    
 	} else {
 		tone(BUZZER, 1000, 200);
 	}

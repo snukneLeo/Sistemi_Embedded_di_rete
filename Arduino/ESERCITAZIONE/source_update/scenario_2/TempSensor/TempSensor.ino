@@ -10,20 +10,20 @@
 #define BUZZER 3
 
 // = NETWORK PACKET ===========================================================
-// Lunghezza della storia dei valori.
-#define TEMP_HISTORY_LEN 200
-// Numero di ascolti prima di eseguire un invio.
-#define LISTEN_TIMES 10
 // Struttura per inviare i parametri.
 struct Temp_temp{
 	/// Temperatura rilevata.
 	float temperatura;
 	/// Tempo al momento dell'invio.
 	unsigned long tempo;
-	/// Vettore con storico valori.
-	float history[TEMP_HISTORY_LEN];
 } sendReq;
 // ----------------------------------------------------------------------------
+
+
+
+
+
+
 
 // = RADIO ====================================================================
 // Utilizzo pin 7 e 8 per il chip enable e chip select.
@@ -81,7 +81,7 @@ void setup() {
 	//  RF24_250KBPS per 250kbs
 	//  RF24_1MBPS per 1Mbps
 	//  RF24_2MBPS per 2Mbps
-	radio.setDataRate( RF24_250KBPS );
+	radio.setDataRate( RF24_2MBPS );
 
 	//apro la pipe per la scrittura
 	radio.openWritingPipe(addresses[0]);
@@ -96,54 +96,28 @@ void setup() {
 
 	Serial.println("DEBUG_1");
 	radio.printDetails();
-
-	// Inizializzo vettore della history.
-	for (int j = 0 ; j < TEMP_HISTORY_LEN; ++j) {
-		sendReq.history[j]=0;
-	}
 }
 
 void loop() {
 	// Rilevo la temperatura.
-	$FILL$
+	sensors.requestTemperatures();
 
 	// Restituisce la temperatura in gradi Celsius (var: temperature).
-	$FILL$
+	temperature = sensors.getTempCByIndex(0);
 
 	// Controllo se la temperature e' sotto il limite.
 	if (temperature < 28) {
-		// Ascolto LISTEN_TIMES volte prima di trasmettere con ritardo tra un
-		//  ascolto e l'altro.
-		radio.startListening();
-		for (int j = 0 ; (j < LISTEN_TIMES) && (!radio.available()); ++j) {
-			delay(250);
-		}
-		radio.stopListening();
 
 		// Imposto la temperatura e il tempo di invio, prima di inviare i dati.
 		sendReq.tempo = micros();
 		sendReq.temperatura = temperature;
 
-		// Update the history.
-	   	memcpy(
-	   		sendReq.history,
-	   		&sendReq.history[1],
-	   		sizeof(sendReq.history) - sizeof(float));
-   		sendReq.history[TEMP_HISTORY_LEN - 1] = temperature;
-
-		// Invio della struttura dati 'sendReq', per N volte.
-		for (int i = 0; i < $FILL$; ++i) {
-			// Invio della struttura dati 'sendReq', ma con controllo di
-			//  avvenuto invio.
-			if ($FILL$) {
-				Serial.print("Sending temperature : ");
-				Serial.print(sendReq.temperatura);
-				Serial.println(" C");
-			}
-			else {
-				Serial.println("Failed on sending the temperature.");
-			}
-		}
+		// Invio della struttura dati 'sendReq'
+    radio.write(&sendReq,sizeof(sendReq));
+		Serial.print("Sending temperature : ");
+    Serial.print(sendReq.temperatura);
+    Serial.println(" C");
+    
 	} else {
 		tone(BUZZER, 1000, 200);
 	}
