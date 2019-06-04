@@ -1,0 +1,5 @@
+.idea
+/gurobi.log
+/result.txt
+*.pyc
+*.result
